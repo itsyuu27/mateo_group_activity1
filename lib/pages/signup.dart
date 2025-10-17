@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:mateo_group_activity1/pages/login.dart';
 
 // The Signup Page Widget
 class SignupPage extends StatefulWidget {
@@ -17,6 +20,8 @@ class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  static const String _signupApiUrl = 'http://mateogroup.mywebcommunity.org/signup.php';
 
   void _togglePasswordVisibility() {
     setState(() {
@@ -42,7 +47,10 @@ class _SignupPageState extends State<SignupPage> {
               child: const Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
-                Navigator.of(context).pop(); // Go back to the login page
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (Route<dynamic> route) => false,
+                );
               },
             ),
           ],
@@ -55,13 +63,13 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   // Shows an alert for validation errors
-  void _showValidationErrorDialog() {
+  void _showValidationErrorDialog(String message) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Signup Failed'),
-          content: const Text('Please fill in all required fields correctly.'),
+          content: Text(message),
           actions: <Widget>[
             TextButton(
               child: const Text('OK'),
@@ -78,11 +86,43 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  void _signup() {
-    if (_formKey.currentState!.validate()) {
-      _showSignupSuccessDialog();
-    } else {
-      _showValidationErrorDialog();
+  void _signup() async{
+    if (!_formKey.currentState!.validate()) {
+      _showValidationErrorDialog('Please fill all fields correctly.');
+      return;
+    }
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(content: Text('Signing up...')),
+    );
+
+    try{
+      final response = await http.post(
+        Uri.parse(_signupApiUrl),
+        headers:{'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode({
+          'name':_nameController.text.trim(),
+          'email':_emailController.text.trim(),
+          'password':_passwordController.text
+        })
+      );
+
+      scaffoldMessenger.hideCurrentSnackBar();
+
+      if(response.statusCode == 201){
+        _showSignupSuccessDialog();
+      }
+      else{
+        final responseBody = jsonDecode(response.body);
+        final errorMessage = responseBody['message'] ?? 'An unknown error occured.';
+        _showValidationErrorDialog(errorMessage);
+      }
+    }catch(e){
+      scaffoldMessenger.hideCurrentSnackBar();
+      _showValidationErrorDialog('Network error: Could not connect to the server.');
+      print('Signup Error: $e');
     }
   }
 
