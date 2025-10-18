@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mateo_group_activity1/pages/login.dart';
+import 'pages/homepage.dart';
+import 'pages/login.dart';
+import 'pages/signup.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +14,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPage(),
+      title: 'Mateo Group Activity 1',
+      theme: ThemeData(
+        fontFamily: 'Roboto',
+        primarySwatch: Colors.red,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: const HomePage(),
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const SignupPage(),
+      },
     );
   }
 }
